@@ -46,7 +46,7 @@ Both setup methods make it impossible to detect Sing-Box from the outside, which
 To setup the server, run this command on it:
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/A-Zuro/Secret-Sing-Box/master/Scripts/install-server.sh); source /etc/bash.bashrc
+bash <(curl -Ls https://raw.githubusercontent.com/ZloZloe39/Secret-Sing-Box-Extended/main/Scripts/install-server.sh); source /etc/bash.bashrc
 ```
 
 Then just enter the necessary information:
