@@ -142,6 +142,76 @@ manage_rule_sets() {
     done
 }
 
+update_sing_box_extended() {
+    declare -A -g info_message=()
+    info_message[1_ru]="${textcolor_light}Sing-Box Extended уже последней версии:"
+    info_message[2_ru]="${textcolor_light}Обновление Sing-Box Extended...${clear}"
+    info_message[3_ru]="${red}Ошибка: не удалось обновить Sing-Box Extended (${proc_arch})${clear}"
+    info_message[1_en]="${textcolor_light}Sing-Box Extended is already the latest version:"
+    info_message[2_en]="${textcolor_light}Updating Sing-Box Extended...${clear}"
+    info_message[3_en]="${red}Error: failed to update Sing-Box Extended (${proc_arch})${clear}"
+
+    # Удаление оригинального пакета sing-box (deb.sagernet.org), если он установлен — миграция на extended
+    rm -f /etc/apt/sources.list.d/sagernet.list
+    if dpkg -s sing-box &> /dev/null
+    then
+        apt-mark unhold sing-box 2> /dev/null
+        apt-get remove -y sing-box &> /dev/null
+    fi
+
+    proc_arch=$(dpkg --print-architecture)
+    if [[ ! ${proc_arch} =~ ^(amd64|arm64)$ ]]
+    then
+        echo -e "${info_message[3_$language]}"
+        return 1
+    fi
+
+    sb_tag=$(curl -Ls https://api.github.com/repos/shtorm-7/sing-box-extended/releases/latest | grep '"tag_name"' | head -n 1 | cut -d '"' -f 4)
+    cur_version=$(/usr/bin/sing-box version 2> /dev/null)
+
+    if [[ "$cur_version" == "${sb_tag#v}" ]]
+    then
+        echo -e "${info_message[1_$language]} ${textcolor}v${cur_version}${clear}"
+        return 0
+    fi
+
+    echo -e "${info_message[2_$language]}"
+    wget -q -O /tmp/sing-box.tar.gz "https://github.com/shtorm-7/sing-box-extended/releases/download/${sb_tag}/sing-box-${sb_tag#v}-linux-${proc_arch}.tar.gz" \
+        && tar -xf /tmp/sing-box.tar.gz --strip-components=1 -C /tmp sing-box \
+        && install -m 755 /tmp/sing-box /usr/bin/sing-box \
+        && rm -f /tmp/sing-box /tmp/sing-box.tar.gz
+
+    if [[ $? -ne 0 ]]
+    then
+        echo -e "${info_message[3_$language]}"
+        return 1
+    fi
+
+    id sing-box &> /dev/null || useradd -r -s /usr/sbin/nologin -d /var/lib/sing-box -c "sing-box user" sing-box
+    cat > /etc/systemd/system/sing-box.service <<EOF
+[Unit]
+Description=sing-box service (extended)
+Documentation=https://github.com/shtorm-7/sing-box-extended
+After=network.target nss-lookup.target network-online.target
+
+[Service]
+User=sing-box
+StateDirectory=sing-box
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
+ExecStart=/usr/bin/sing-box -D /var/lib/sing-box -C /etc/sing-box run
+ExecReload=/bin/kill -HUP \$MAINPID
+Restart=on-failure
+RestartSec=10s
+LimitNOFILE=infinity
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    echo ""
+}
+
 update_services() {
     declare -A -g info_message=()
     info_message[1_ru]="${textcolor_light}Обновление пакетов...${clear}"
@@ -163,14 +233,13 @@ update_services() {
         insert_values
     fi
 
-    curl -fsSL https://sing-box.app/gpg.key -o /etc/apt/keyrings/sagernet.asc && chmod a+r /etc/apt/keyrings/sagernet.asc
+    update_sing_box_extended
+
     curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg > /dev/null
     curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-    gpg --dry-run --quiet --no-keyring --import --import-options import-show /etc/apt/keyrings/sagernet.asc /usr/share/keyrings/nginx-archive-keyring.gpg /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+    gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
 
-    apt-mark unhold sing-box
     apt update -y && apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" full-upgrade -y
-    apt-mark hold sing-box
     apt autoremove -y; apt autoclean -y
     systemctl daemon-reload
     echo ""

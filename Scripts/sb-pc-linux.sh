@@ -75,7 +75,8 @@ download_sing_box() {
         [[ ! -d ~/sing-box-dir ]] && mkdir ~/sing-box-dir
         proc_arch="amd64"
         [[ $(uname -m) == "aarch64" || $(uname -m) == "arm64" ]] && proc_arch="arm64"
-        zip_url=$(curl -Ls https://api.github.com/repos/SagerNet/sing-box/releases/latest | grep "browser_download_url.*linux-${proc_arch}.tar.gz" | head -n 1 | cut -d '"' -f 4)
+        # Sing-Box Extended (shtorm-7) — имена архивов: sing-box-<версия>-linux-<архитектура>.tar.gz
+        zip_url=$(curl -Ls https://api.github.com/repos/shtorm-7/sing-box-extended/releases/latest | grep "browser_download_url.*linux-${proc_arch}.tar.gz" | head -n 1 | cut -d '"' -f 4)
         wget -O ~/sing-box-dir/sing-box.tar.gz "${zip_url}"
         tar -xf ~/sing-box-dir/sing-box.tar.gz --strip-components=1 -C ~/sing-box-dir
         rm -f ~/sing-box-dir/sing-box.tar.gz

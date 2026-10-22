@@ -809,6 +809,58 @@ enable_bbr() {
     echo ""
 }
 
+install_sing_box_extended() {
+    declare -A -g info_message=()
+    info_message[1_ru]="${textcolor_light}Установка Sing-Box Extended (shtorm-7)...${clear}"
+    info_message[2_ru]="${red}Ошибка: не удалось установить Sing-Box Extended (${proc_arch})${clear}"
+    info_message[1_en]="${textcolor_light}Installing Sing-Box Extended (shtorm-7)...${clear}"
+    info_message[2_en]="${red}Error: failed to install Sing-Box Extended (${proc_arch})${clear}"
+
+    proc_arch=$(dpkg --print-architecture)
+    if [[ ! ${proc_arch} =~ ^(amd64|arm64)$ ]]
+    then
+        echo -e "${info_message[2_$language]}"
+        return 1
+    fi
+
+    echo -e "${info_message[1_$language]}"
+    sb_tag=$(curl -Ls https://api.github.com/repos/shtorm-7/sing-box-extended/releases/latest | grep '"tag_name"' | head -n 1 | cut -d '"' -f 4)
+    wget -q -O /tmp/sing-box.tar.gz "https://github.com/shtorm-7/sing-box-extended/releases/download/${sb_tag}/sing-box-${sb_tag#v}-linux-${proc_arch}.tar.gz" \
+        && tar -xf /tmp/sing-box.tar.gz --strip-components=1 -C /tmp sing-box \
+        && install -m 755 /tmp/sing-box /usr/bin/sing-box \
+        && rm -f /tmp/sing-box /tmp/sing-box.tar.gz
+
+    if [[ $? -ne 0 ]]
+    then
+        echo -e "${info_message[2_$language]}"
+        return 1
+    fi
+
+    id sing-box &> /dev/null || useradd -r -s /usr/sbin/nologin -d /var/lib/sing-box -c "sing-box user" sing-box
+    cat > /etc/systemd/system/sing-box.service <<EOF
+[Unit]
+Description=sing-box service (extended)
+Documentation=https://github.com/shtorm-7/sing-box-extended
+After=network.target nss-lookup.target network-online.target
+
+[Service]
+User=sing-box
+StateDirectory=sing-box
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
+ExecStart=/usr/bin/sing-box -D /var/lib/sing-box -C /etc/sing-box run
+ExecReload=/bin/kill -HUP \$MAINPID
+Restart=on-failure
+RestartSec=10s
+LimitNOFILE=infinity
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    echo ""
+}
+
 install_packages() {
     declare -A -g info_message=()
     info_message[1_ru]="${textcolor_light}Установка необходимых пакетов...${clear}"
@@ -830,12 +882,7 @@ install_packages() {
     fi
 
     echo ""
-    [[ ! -d /etc/apt/keyrings ]] && mkdir -p /etc/apt/keyrings
-    curl -fsSL https://sing-box.app/gpg.key -o /etc/apt/keyrings/sagernet.asc && chmod a+r /etc/apt/keyrings/sagernet.asc
-    gpg --dry-run --quiet --no-keyring --import --import-options import-show /etc/apt/keyrings/sagernet.asc
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/sagernet.asc] https://deb.sagernet.org/ * *" | tee /etc/apt/sources.list.d/sagernet.list > /dev/null
-    apt-get update -y && apt-get install sing-box -y
-    apt-mark hold sing-box
+    install_sing_box_extended
 
     echo ""
     [[ ! -d /var/www ]] && mkdir -p /var/www
