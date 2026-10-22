@@ -31,12 +31,11 @@ Both setup methods make it impossible to detect Sing-Box from the outside, which
 4) Security setup (SSH, UFW and unattended-upgrades) — optional
 5) Multiplexing to optimise connections and to solve TLS in TLS problem
 6) Enable BBR
-7) WARP setup
-8) Optional setup of proxy chains of two or more servers
-9) An option to setup connection to custom Cloudflare IP on the client
-10) Client Sing-Box configs (v1.14.0+) with routing rules for Russia
-11) Automated management of user config files
-12) Page for convenient distribution of subscriptions ([example](https://a-zuro.github.io/Secret-Sing-Box/sub.html#en))
+7) Optional setup of proxy chains of two or more servers
+8) An option to setup connection to custom Cloudflare IP on the client
+9) Client Sing-Box configs (v1.14.0+) with routing rules for Russia
+10) Automated management of user config files
+11) Page for convenient distribution of subscriptions ([example](https://a-zuro.github.io/Secret-Sing-Box/sub.html#en))
 
 ### Server setup
 
@@ -75,14 +74,6 @@ Option 5 synchronizes the settings in client configs of all users, which elimina
 5.1. Synchronizes settings with the [template from GitHub](../Config-Templates/client.json).
 
 5.2. Synchronizes settings with the local template, allows to set custom rules in client configs. If new rule sets are added to the configs by using this option, they will be automatically downloaded on the server if they are from [SagerNet](https://github.com/SagerNet/sing-geosite/tree/rule-set).
-
-### WARP+ keys (if you have)
-
-To activate a WARP+ key, enter this command (replace the key with yours):
-
-```
-warp-cli registration license CMD5m479-Y5hS6y79-U06c5mq9
-```
 
 ### Client setup
 

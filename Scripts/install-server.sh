@@ -893,32 +893,9 @@ install_packages() {
     echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | tee /etc/apt/preferences.d/99nginx
     apt update -y && apt install nginx -y
 
-    echo ""
-    curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-    gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-    echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ ${os_codename} main" | tee /etc/apt/sources.list.d/cloudflare-client.list
-    #apt-get update -y && apt-get install cloudflare-warp -y
-    downgrade_nasty_warp
-
     [[ "$variant" != "1" ]] && apt install haproxy -y
     apt autoremove -y; apt autoclean -y
     echo ""
-}
-
-downgrade_nasty_warp() {
-    # Because some WARP releases are buggy...
-    warp_version="2026.3.846.0"
-    proc_arch="amd64"
-    [[ $(uname -m) == "aarch64" || $(uname -m) == "arm64" ]] && proc_arch="arm64"
-    [[ "$os_codename" == "resolute" ]] && os_codename="noble"
-    wget -q -P /tmp "https://pkg.cloudflareclient.com/pool/${os_codename}/main/c/cloudflare-warp/cloudflare-warp_${warp_version}_${proc_arch}.deb"
-
-    if [[ $? -eq 0 ]]
-    then
-        apt install /tmp/cloudflare-warp_${warp_version}_${proc_arch}.deb -y
-        rm -f /tmp/cloudflare-warp_${warp_version}_${proc_arch}.deb
-        apt-mark hold cloudflare-warp
-    fi
 }
 
 create_user() {
@@ -1078,28 +1055,6 @@ certificates() {
         openssl dhparam -out /etc/haproxy/dhparam.pem 2048
     fi
 
-    echo ""
-}
-
-setup_warp() {
-    declare -A -g info_message=()
-    info_message[1_ru]="${textcolor_light}Настройка WARP...${clear}"
-    info_message[1_en]="${textcolor_light}Setting up WARP...${clear}"
-
-    echo -e "${info_message[1_$language]}"
-    warp-cli -V
-    echo ""
-    yes | warp-cli registration new
-    warp-cli mode proxy
-    warp-cli proxy port 40000
-    warp-cli connect
-    mkdir -p /etc/systemd/system/warp-svc.service.d
-    echo -e "[Service]\nLogLevelMax=3\nCPUQuota=20%\nMemoryHigh=128M" >> /etc/systemd/system/warp-svc.service.d/override.conf
-    systemctl daemon-reload
-    systemctl restart warp-svc.service
-    systemctl enable warp-svc.service
-    echo ""
-    systemctl status warp-svc.service --no-pager -l -n 5
     echo ""
 }
 
@@ -2553,7 +2508,6 @@ enable_bbr
 install_packages
 setup_general_security
 certificates
-setup_warp
 setup_sing_box
 setup_nginx
 setup_haproxy

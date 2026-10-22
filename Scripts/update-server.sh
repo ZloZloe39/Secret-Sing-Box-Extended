@@ -219,13 +219,23 @@ update_services() {
 
     echo ""
     echo -e "${info_message[1_$language]}"
-    systemctl stop sing-box.service warp-svc.service nginx.service
+
+    # Удаление WARP (cloudflare-warp) как стороннего приложения, если он установлен (миграция)
+    if dpkg -s cloudflare-warp &> /dev/null
+    then
+        systemctl disable --now warp-svc.service 2> /dev/null
+        apt-get remove -y cloudflare-warp &> /dev/null
+        rm -f /etc/apt/sources.list.d/cloudflare-client.list
+        rm -rf /etc/systemd/system/warp-svc.service.d
+    fi
+
+    systemctl stop sing-box.service nginx.service
     [[ -f /etc/haproxy/auth.lua ]] && systemctl stop haproxy.service
     [[ -f /etc/apt/apt.conf.d/50unattended-upgrades ]] && systemctl stop unattended-upgrades.service
 
     extract_values
     cp -f /etc/sing-box/config.json /etc/sing-box/config.json.0
-    wget -O /etc/sing-box/config.json.1 https://raw.githubusercontent.com/A-Zuro/Secret-Sing-Box/master/Config-Templates/config.json
+    wget -O /etc/sing-box/config.json.1 https://raw.githubusercontent.com/ZloZloe39/Secret-Sing-Box-Extended/main/Config-Templates/config.json
 
     if [[ $? -eq 0 ]]
     then
@@ -236,16 +246,15 @@ update_services() {
     update_sing_box_extended
 
     curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg > /dev/null
-    curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-    gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+    gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg
 
     apt update -y && apt -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" full-upgrade -y
     apt autoremove -y; apt autoclean -y
     systemctl daemon-reload
     echo ""
 
-    systemctl start sing-box.service warp-svc.service nginx.service
-    systemctl status sing-box.service warp-svc.service nginx.service --no-pager -l -n 5
+    systemctl start sing-box.service nginx.service
+    systemctl status sing-box.service nginx.service --no-pager -l -n 5
     echo ""
 
     if [[ -f /etc/haproxy/auth.lua ]]
