@@ -240,9 +240,13 @@ enter_check_warp() {
     check_message[6_en]="${textcolor}[?]${clear} Enter jmin AWG:"
     check_message[7_en]="${textcolor}[?]${clear} Enter jmax AWG:"
     check_message[8_en]="${textcolor}[?]${clear} Enter i1 AWG:"
+    check_message[warpinfo_ru]="${textcolor_light}Данные необходимо предварительно получить с помощью Warpscout${clear}"
+    check_message[warpinfo_en]="${textcolor_light}You must obtain these details in advance using Warpscout${clear}"
 
     warp_ipv6=""; warp_private=""; warp_endpoint=""; warp_port=""
     warp_jc=""; warp_jmin=""; warp_jmax=""; warp_i1=""
+    echo ""
+    echo -e "${check_message[warpinfo_$language]}"
     echo ""
 
     while [[ -z $warp_ipv6 ]]
