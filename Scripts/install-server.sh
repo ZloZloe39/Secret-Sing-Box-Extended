@@ -1336,7 +1336,7 @@ cat > /etc/sing-box/config.json <<EOF
   "endpoints": [
     {
       "type": "wireguard",
-      "tag": "wireguard-out",
+      "tag": "warp",
       "mtu": 1280,
       "address": ["172.16.0.2/32",
         "${warp_ipv6}"],
