@@ -475,11 +475,11 @@ enter_check_ssh_port() {
     check_message[1_ru]="${textcolor}[?]${clear} Введите новый номер порта SSH или 22 (рекомендуется номер более 1024):"
     check_message[2_ru]="${red}Ошибка: номер порта должен быть целым положительным числом${clear}"
     check_message[3_ru]="${red}Ошибка: номер порта не может быть больше 65535${clear}"
-    check_message[4_ru]="${red}Ошибка: порты 80, 443, 10443, 11443 и 40000 будут заняты${clear}"
+    check_message[4_ru]="${red}Ошибка: порты 80, 443, 10443 и 11443 будут заняты${clear}"
     check_message[1_en]="${textcolor}[?]${clear} Enter new SSH port number or 22 (number above 1024 is recommended):"
     check_message[2_en]="${red}Error: the port number must be a positive integer${clear}"
     check_message[3_en]="${red}Error: the port number can't be greater than 65535${clear}"
-    check_message[4_en]="${red}Error: the ports 80, 443, 10443, 11443 and 40000 will be taken${clear}"
+    check_message[4_en]="${red}Error: the ports 80, 443, 10443 and 11443 will be taken${clear}"
 
     while true
     do
@@ -498,7 +498,7 @@ enter_check_ssh_port() {
         then
             echo -e "${check_message[3_$language]}"
             echo ""
-        elif [[ $ssh_port =~ ^(80|443|10443|11443|40000)$ ]]
+        elif [[ $ssh_port =~ ^(80|443|10443|11443)$ ]]
         then
             echo -e "${check_message[4_$language]}"
             echo ""
@@ -1252,12 +1252,6 @@ cat > /etc/sing-box/config.json <<EOF
     {
       "type": "direct",
       "tag": "direct"
-    },
-    {
-      "type": "socks",
-      "tag": "warp",
-      "server": "127.0.0.1",
-      "server_port": 40000
     }
   ],
   "route": {
