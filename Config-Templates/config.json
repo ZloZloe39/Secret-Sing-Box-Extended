@@ -21,6 +21,34 @@
       }
     ]
   },
+  "endpoints": [
+    {
+      "type": "wireguard",
+      "tag": "wireguard-out",
+      "mtu": 1280,
+      "address": ["172.16.0.2/32",
+        "%IPV6-ADRESS%"],
+      "private_key": "%PRIVATE%",
+      "peers": [
+        {
+          "address": "%ENDPOINT%",
+          "port": %PORT%,
+          "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+          "allowed_ips": ["0.0.0.0/0",
+            "::/0"]
+        }
+      ],
+      "udp_timeout": "5m0s",
+      "amnezia": {
+        "jc": %JC%,
+        "jmin": %JMIN%,
+        "jmax": %JMAX%,
+        "i1": "%I1%",
+        "keepalive_timeout": "8-12",
+        "max_handshake_attempts": "15-20"
+      }
+    }
+  ],
   "inbounds": [
     {
       "type": "trojan",
