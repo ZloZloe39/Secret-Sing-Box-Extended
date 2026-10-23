@@ -269,7 +269,7 @@ enter_check_warp() {
         warp_endpoint=$(echo "${warp_endpoint}" | sed 's/[[:blank:]]//g')
     done
 
-    while [[ -z $warp_port ]]
+    while [[ ! $warp_port =~ ^[0-9]+$ ]]
     do
         echo -e "${check_message[4_$language]}"
         read -r warp_port
