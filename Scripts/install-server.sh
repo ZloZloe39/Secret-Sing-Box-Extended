@@ -222,6 +222,94 @@ enter_check_domain() {
     done
 }
 
+enter_check_warp() {
+    declare -A -g check_message=()
+    check_message[1_ru]="${textcolor}[?]${clear} Введите IPv6 адрес WARP:"
+    check_message[2_ru]="${textcolor}[?]${clear} Введите private ключ WARP:"
+    check_message[3_ru]="${textcolor}[?]${clear} Введите endpoint WARP:"
+    check_message[4_ru]="${textcolor}[?]${clear} Введите port WARP:"
+    check_message[5_ru]="${textcolor}[?]${clear} Введите jc AWG:"
+    check_message[6_ru]="${textcolor}[?]${clear} Введите jmin AWG:"
+    check_message[7_ru]="${textcolor}[?]${clear} Введите jmax AWG:"
+    check_message[8_ru]="${textcolor}[?]${clear} Введите i1 AWG:"
+    check_message[1_en]="${textcolor}[?]${clear} Enter your WARP IPv6 address:"
+    check_message[2_en]="${textcolor}[?]${clear} Enter your WARP private key:"
+    check_message[3_en]="${textcolor}[?]${clear} Enter your WARP endpoint:"
+    check_message[4_en]="${textcolor}[?]${clear} Enter your WARP port:"
+    check_message[5_en]="${textcolor}[?]${clear} Enter jc AWG:"
+    check_message[6_en]="${textcolor}[?]${clear} Enter jmin AWG:"
+    check_message[7_en]="${textcolor}[?]${clear} Enter jmax AWG:"
+    check_message[8_en]="${textcolor}[?]${clear} Enter i1 AWG:"
+
+    warp_ipv6=""; warp_private=""; warp_endpoint=""; warp_port=""
+    warp_jc=""; warp_jmin=""; warp_jmax=""; warp_i1=""
+    echo ""
+
+    while [[ -z $warp_ipv6 ]]
+    do
+        echo -e "${check_message[1_$language]}"
+        read -r warp_ipv6
+        [[ -n $warp_ipv6 ]] && echo ""
+        warp_ipv6=$(echo "${warp_ipv6}" | sed 's/[[:blank:]]//g')
+    done
+
+    while [[ -z $warp_private ]]
+    do
+        echo -e "${check_message[2_$language]}"
+        read -r warp_private
+        [[ -n $warp_private ]] && echo ""
+        warp_private=$(echo "${warp_private}" | sed 's/[[:blank:]]//g')
+    done
+
+    while [[ -z $warp_endpoint ]]
+    do
+        echo -e "${check_message[3_$language]}"
+        read -r warp_endpoint
+        [[ -n $warp_endpoint ]] && echo ""
+        warp_endpoint=$(echo "${warp_endpoint}" | sed 's/[[:blank:]]//g')
+    done
+
+    while [[ -z $warp_port ]]
+    do
+        echo -e "${check_message[4_$language]}"
+        read -r warp_port
+        [[ -n $warp_port ]] && echo ""
+        warp_port=$(echo "${warp_port}" | sed 's/[[:blank:]]//g')
+    done
+
+    while [[ ! $warp_jc =~ ^[0-9.]+$ ]]
+    do
+        echo -e "${check_message[5_$language]}"
+        read -r warp_jc
+        [[ -n $warp_jc ]] && echo ""
+        warp_jc=$(echo "${warp_jc}" | sed 's/[[:blank:]]//g')
+    done
+
+    while [[ ! $warp_jmin =~ ^[0-9.]+$ ]]
+    do
+        echo -e "${check_message[6_$language]}"
+        read -r warp_jmin
+        [[ -n $warp_jmin ]] && echo ""
+        warp_jmin=$(echo "${warp_jmin}" | sed 's/[[:blank:]]//g')
+    done
+
+    while [[ ! $warp_jmax =~ ^[0-9.]+$ ]]
+    do
+        echo -e "${check_message[7_$language]}"
+        read -r warp_jmax
+        [[ -n $warp_jmax ]] && echo ""
+        warp_jmax=$(echo "${warp_jmax}" | sed 's/[[:blank:]]//g')
+    done
+
+    while [[ -z $warp_i1 ]]
+    do
+        echo -e "${check_message[8_$language]}"
+        read -r warp_i1
+        [[ -n $warp_i1 ]] && echo ""
+        warp_i1=$(echo "${warp_i1}" | sed 's/[[:blank:]]//g')
+    done
+}
+
 enter_check_trjpass() {
     declare -A -g check_message=()
     check_message[1_ru]="${textcolor}[?]${clear} Введите пароль для Trojan или оставьте пустым для генерации случайного пароля:"
@@ -702,6 +790,7 @@ enter_data_ru() {
 
     enter_check_subs_path
     enter_check_ruleset_path
+    enter_check_warp
 
     echo -e "${textcolor}[?]${clear} Нужна ли настройка безопасности (SSH, UFW и unattended-upgrades)?"
     echo "1 - Да (в редких случаях при нестандартных настройках у хостера можно потерять доступ к серверу)"
@@ -778,6 +867,7 @@ enter_data_en() {
 
     enter_check_subs_path
     enter_check_ruleset_path
+    enter_check_warp
 
     echo -e "${textcolor}[?]${clear} Do you need security setup (SSH, UFW and unattended-upgrades)?"
     echo "1 - Yes (in rare cases of hoster's non-standard settings, access to the server might be lost)"
@@ -1249,6 +1339,34 @@ cat > /etc/sing-box/config.json <<EOF
       }
     ]
   },
+  "endpoints": [
+    {
+      "type": "wireguard",
+      "tag": "wireguard-out",
+      "mtu": 1280,
+      "address": ["172.16.0.2/32",
+        "${warp_ipv6}"],
+      "private_key": "${warp_private}",
+      "peers": [
+        {
+          "address": "${warp_endpoint}",
+          "port": ${warp_port},
+          "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+          "allowed_ips": ["0.0.0.0/0",
+            "::/0"]
+        }
+      ],
+      "udp_timeout": "5m0s",
+      "amnezia": {
+        "jc": ${warp_jc},
+        "jmin": ${warp_jmin},
+        "jmax": ${warp_jmax},
+        "i1": "${warp_i1}",
+        "keepalive_timeout": "8-12",
+        "max_handshake_attempts": "15-20"
+      }
+    }
+  ],
   "experimental": {
     "cache_file": {
       "enabled": true
